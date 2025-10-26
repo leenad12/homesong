@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 Image → Playlist Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #1db954;
+            background-color: #f8f9fa;
+        }
+
+        .upload-area.dragover {
+            border-color: #1db954;
+            background-color: #e8f5e8;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #1db954;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1db954;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .vision-data, .music-profile {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .vision-data h3, .music-profile h3 {
+            color: #1db954;
+            margin-bottom: 15px;
+        }
+
+        .playlist {
+            margin-top: 30px;
+        }
+
+        .track {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .track:hover {
+            transform: translateX(5px);
+            background: #e8f5e8;
+        }
+
+        .track-number {
+            background: #1db954;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .track-info {
+            flex: 1;
+        }
+
+        .track-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .track-artist {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .track-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+        }
+
+        .btn-spotify {
+            background: #1db954;
+            color: white;
+        }
+
+        .btn-spotify:hover {
+            background: #1ed760;
+        }
+
+        .btn-preview {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-preview:hover {
+            background: #ff5252;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .preview-audio {
+            margin-top: 10px;
+        }
+
+        .options-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .options-section h3 {
+            color: #1db954;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .option-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .option-group select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            transition: border-color 0.2s ease;
+        }
+
+        .option-group select:focus {
+            outline: none;
+            border-color: #1db954;
+        }
+
+        .option-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            accent-color: #1db954;
+        }
+
+        .preview-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .preview-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+        }
+
+        .preview-btn:hover {
+            background: #ff5252;
+            transform: translateY(-1px);
+        }
+
+        .preview-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview-time {
+            font-size: 0.8em;
+            color: #666;
+            min-width: 60px;
+        }
+
+        .explicit-label {
+            font-size: 0.8em;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .explicit-label:contains("Explicit") {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .explicit-label:contains("Clean") {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Image → Playlist Generator</h1>
+            <p>Upload an image and discover music that matches its mood and style!</p>
+        </div>
+
+        <div class="content">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📸</div>
+                    <h3>Drop an image here or click to browse</h3>
+                    <p>Supports JPG, PNG, and other image formats</p>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        Choose Image
+                    </button>
+                </div>
+
+                <div class="options-section">
+                    <h3>🎛️ Playlist Options</h3>
+                    <div class="options-grid">
+                        <div class="option-group">
+                            <label for="playlistSize">Number of songs:</label>
+                            <select id="playlistSize">
+                                <option value="5">5 songs</option>
+                                <option value="10" selected>10 songs</option>
+                                <option value="15">15 songs</option>
+                                <option value="20">20 songs</option>
+                                <option value="25">25 songs</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label for="explicitFilter">Content filter:</label>
+                            <select id="explicitFilter">
+                                <option value="any">Any content</option>
+                                <option value="clean" selected>Clean only</option>
+                                <option value="explicit">Explicit allowed</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label>
+                                <input type="checkbox" id="searchPlaylists" checked>
+                                Search existing playlists
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing your image and generating playlist...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+
+            <div class="results" id="results">
+                <div class="vision-data">
+                    <h3>🖼️ Image Analysis</h3>
+                    <div id="visionData"></div>
+                </div>
+
+                <div class="music-profile">
+                    <h3>🎚️ Music Profile</h3>
+                    <div id="musicProfile"></div>
+                </div>
+
+                <div class="playlist">
+                    <h3>🎧 Generated Playlist</h3>
+                    <div id="playlist"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+        const visionData = document.getElementById('visionData');
+        const musicProfile = document.getElementById('musicProfile');
+        const playlist = document.getElementById('playlist');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Add user options
+            formData.append('playlistSize', document.getElementById('playlistSize').value);
+            formData.append('explicitFilter', document.getElementById('explicitFilter').value);
+            formData.append('searchPlaylists', document.getElementById('searchPlaylists').checked);
+
+            // Show loading state
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+
+            // Upload and analyze
+            fetch('/analyze', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    displayResults(data);
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                showError('Failed to analyze image: ' + err.message);
+            });
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        function displayResults(data) {
+            // Display vision data
+            const color = data.visionData.color;
+            const colorString = color ? `RGB(${color.red}, ${color.green}, ${color.blue})` : 'N/A';
+            const labels = data.visionData.labels ? data.visionData.labels.join(', ') : 'N/A';
+
+            visionData.innerHTML = `
+                <p><strong>Colors:</strong> ${colorString}</p>
+                <p><strong>Detected Objects:</strong> ${labels}</p>
+                <p><strong>Analysis:</strong> Image processed successfully</p>
+            `;
+
+            // Display music profile
+            musicProfile.innerHTML = `
+                <p><strong>Energy:</strong> ${(data.musicProfile.energy * 100).toFixed(0)}%</p>
+                <p><strong>Valence:</strong> ${(data.musicProfile.valence * 100).toFixed(0)}%</p>
+                <p><strong>Acousticness:</strong> ${(data.musicProfile.acousticness * 100).toFixed(0)}%</p>
+                <p><strong>Genres:</strong> ${data.musicProfile.genreSeeds.join(', ')}</p>
+            `;
+
+            // Display playlist
+            playlist.innerHTML = data.playlist.map((track, index) => `
+                <div class="track">
+                    <div class="track-number">${index + 1}</div>
+                    <div class="track-info">
+                        <div class="track-name">${track.name}</div>
+                        <div class="track-artist">${track.artist}</div>
+                        ${track.explicit !== undefined ? `
+                            <div class="explicit-label">${track.explicit ? '🔞 Explicit' : '✅ Clean'}</div>
+                        ` : ''}
+                        ${track.preview_url ? `
+                            <div class="preview-controls">
+                                <button class="preview-btn" onclick="playPreview('${track.preview_url}', ${index})" id="preview-${index}">
+                                    ▶️ Preview (10s)
+                                </button>
+                                <span class="preview-time" id="time-${index}"></span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="track-actions">
+                        <a href="${track.external_url}" target="_blank" class="btn btn-spotify">
+                            🎵 Open in Spotify
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            results.style.display = 'block';
+        }
+
+        let currentAudio = null;
+        let previewTimers = {};
+
+        function playPreview(url, index) {
+            // Stop any currently playing audio
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+
+            // Reset all preview buttons
+            document.querySelectorAll('.preview-btn').forEach(btn => {
+                btn.textContent = '▶️ Preview (10s)';
+                btn.disabled = false;
+            });
+
+            // Clear all timers
+            Object.values(previewTimers).forEach(timer => clearInterval(timer));
+            previewTimers = {};
+
+            // Reset all time displays
+            document.querySelectorAll('.preview-time').forEach(time => {
+                time.textContent = '';
+            });
+
+            const audio = new Audio(url);
+            currentAudio = audio;
+
+            const button = document.getElementById(`preview-${index}`);
+            const timeDisplay = document.getElementById(`time-${index}`);
+
+            let timeLeft = 10;
+            timeDisplay.textContent = `${timeLeft}s`;
+
+            audio.addEventListener('loadeddata', () => {
+                audio.play().catch(e => {
+                    console.log('Preview not available');
+                    button.textContent = '❌ Preview unavailable';
+                    button.disabled = true;
+                });
+            });
+
+            audio.addEventListener('play', () => {
+                button.textContent = '⏸️ Pause';
+
+                // Start countdown timer
+                previewTimers[index] = setInterval(() => {
+                    timeLeft--;
+                    timeDisplay.textContent = `${timeLeft}s`;
+
+                    if (timeLeft <= 0) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        button.textContent = '▶️ Preview (10s)';
+                        timeDisplay.textContent = '';
+                        clearInterval(previewTimers[index]);
+                        delete previewTimers[index];
+                    }
+                }, 1000);
+            });
+
+            audio.addEventListener('pause', () => {
+                button.textContent = '▶️ Preview (10s)';
+                timeDisplay.textContent = '';
+                clearInterval(previewTimers[index]);
+                delete previewTimers[index];
+            });
+
+            audio.addEventListener('ended', () => {
+                button.textContent = '▶️ Preview (10s)';
+                timeDisplay.textContent = '';
+                clearInterval(previewTimers[index]);
+                delete previewTimers[index];
+            });
+
+            // Auto-stop after 10 seconds
+            setTimeout(() => {
+                if (audio && !audio.paused) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    button.textContent = '▶️ Preview (10s)';
+                    timeDisplay.textContent = '';
+                    clearInterval(previewTimers[index]);
+                    delete previewTimers[index];
+                }
+            }, 10000);
+        }
+    </script>
+</body>
+</html>
